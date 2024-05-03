@@ -1,0 +1,54 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error
+from sklearn.impute import SimpleImputer
+import datetime
+
+# Load the dataset
+data = pd.read_csv("E:\Table data.csv")
+
+# Extract features
+X = data[['Views', 'Watch time (hours)', 'Subscribers', 'Impressions', 'Impressions click-through rate (%)']]
+X['Video publish time'] = pd.to_datetime(data['Video publish time'])
+X['Day of week'] = X['Video publish time'].dt.dayofweek
+X['Hour of day'] = X['Video publish time'].dt.hour
+X.drop(columns=['Video publish time'], inplace=True)
+
+# Target variable for views
+y_views = data['Views']  
+
+# Handle missing values in the target variable
+y_views = y_views.fillna(y_views.mean())
+
+# Split the data into training and testing sets for views prediction
+X_train_views, X_test_views, y_train_views, y_test_views = train_test_split(X, y_views, test_size=0.2, random_state=42)
+
+# Initialize SimpleImputer with strategy='mean' to impute missing values for views prediction
+imputer_views = SimpleImputer(strategy='mean')
+
+# Fit the imputer on the training data and transform both training and testing data for views prediction
+X_train_views_imputed = imputer_views.fit_transform(X_train_views)
+X_test_views_imputed = imputer_views.transform(X_test_views)
+
+# Initialize the Random Forest regressor model for views prediction
+model_views = RandomForestRegressor(n_estimators=100, random_state=42)
+
+# Train the model using imputed data for views prediction
+model_views.fit(X_train_views_imputed, y_train_views)
+
+# Make predictions on the testing set using the imputed data for views prediction
+predictions_views_imputed = model_views.predict(X_test_views_imputed)
+
+# Evaluate the model performance using the imputed data for views prediction
+mae_views_imputed = mean_absolute_error(y_test_views, predictions_views_imputed)
+print("Mean Absolute Error for views with imputed data:", mae_views_imputed)
+
+# Example usage: Predict the actual time and predicted views for a new video
+new_video_features = [[10000, 500, 1000, 20000, 2.5, 3, 12]]  # Example features for Views, Watch time, Subscribers, Impressions, CTR, Day of week, Hour of day
+predicted_views = model_views.predict(new_video_features)[0]
+print("Predicted views for the new video:", predicted_views)
+
+# Assuming the video will be published immediately after running the code
+current_time = datetime.datetime.now()
+print("Actual time when the video is published:", current_time)
